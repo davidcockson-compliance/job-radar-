@@ -173,12 +173,7 @@ export async function performDiscoverySweep() {
     let totalNew = 0;
 
     for (const zone of activeZones) {
-        if (!zone.searchTitle || !zone.searchLocation) {
-            console.log(`Skipping zone "${zone.name}": searchTitle or searchLocation missing.`);
-            continue;
-        }
-
-        console.log(`Sweeping for zone: ${zone.name} (${zone.searchTitle} in ${zone.searchLocation})`);
+        console.log(`Sweeping for zone: ${zone.name}`);
 
         let enabledSources = [];
         try {
@@ -187,9 +182,17 @@ export async function performDiscoverySweep() {
             enabledSources = ['LinkedIn', 'Indeed'];
         }
 
-        const searchTasks = generateSearchUrls(zone.searchTitle, zone.searchLocation, enabledSources);
-
         // --- Search-engine sources (LinkedIn, Indeed, Otta) via Puppeteer ---
+        // These require searchTitle and searchLocation
+        const hasSearchParams = zone.searchTitle && zone.searchLocation;
+        const searchTasks = hasSearchParams
+            ? generateSearchUrls(zone.searchTitle, zone.searchLocation, enabledSources)
+            : [];
+
+        if (!hasSearchParams && searchTasks.length === 0) {
+            console.log(`Zone "${zone.name}": no searchTitle/searchLocation, skipping search-engine sources.`);
+        }
+
         for (const task of searchTasks) {
             const html = await fetchHtmlWithPuppeteer(task.url);
 
