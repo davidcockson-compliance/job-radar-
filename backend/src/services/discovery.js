@@ -115,16 +115,24 @@ async function fetchHtmlWithPuppeteer(url) {
 async function fetchJsonApi(url) {
     try {
         console.log(`Fetching JSON API: ${url}`);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000);
         const res = await fetch(url, {
             headers: { 'Accept': 'application/json' },
+            signal: controller.signal,
         });
+        clearTimeout(timeout);
         if (!res.ok) {
             console.log(`API returned ${res.status} for ${url}`);
             return null;
         }
         return await res.json();
     } catch (error) {
-        console.error(`Error fetching JSON from ${url}:`, error.message);
+        if (error.name === 'AbortError') {
+            console.error(`Timeout fetching JSON from ${url} (30s)`);
+        } else {
+            console.error(`Error fetching JSON from ${url}:`, error.message);
+        }
         return null;
     }
 }

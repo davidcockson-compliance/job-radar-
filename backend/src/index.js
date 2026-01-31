@@ -358,6 +358,9 @@ app.post('/api/radar/rescore', async (req, res) => {
 
 // Run automated discovery sweep
 app.post('/api/radar/sweep', async (req, res) => {
+  // Allow up to 10 minutes for discovery sweeps
+  req.setTimeout(600000);
+  res.setTimeout(600000);
   try {
     const stats = await performDiscoverySweep();
     res.json({ success: true, stats });
@@ -636,7 +639,12 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🐸 FrogHunter API running on http://localhost:${PORT}`);
   initScheduler();
 });
+
+// Allow long-running requests (e.g. discovery sweeps) up to 10 minutes
+server.timeout = 600000;
+server.keepAliveTimeout = 600000;
+server.headersTimeout = 605000;

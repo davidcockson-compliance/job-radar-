@@ -125,17 +125,24 @@ function App() {
 
   const handleRunDiscovery = useCallback(async () => {
     setLoading(true)
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 600000) // 10 minutes
     try {
-      const res = await fetch('/api/radar/sweep', { method: 'POST' })
+      const res = await fetch('/api/radar/sweep', { method: 'POST', signal: controller.signal })
       const data = await res.json()
       if (data.success) {
         alert(`Discovery complete! Processed ${data.stats.processed} jobs, found ${data.stats.new} new leads.`)
         fetchLeads()
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to run discovery:', err)
-      alert('Failed to run discovery sweep.')
+      if (err.name === 'AbortError') {
+        alert('Discovery sweep timed out after 10 minutes. The search may still be running on the server.')
+      } else {
+        alert('Failed to run discovery sweep.')
+      }
     } finally {
+      clearTimeout(timeout)
       setLoading(false)
     }
   }, [fetchLeads])
